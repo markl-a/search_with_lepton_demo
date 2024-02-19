@@ -1,4 +1,4 @@
-[
+
 # Lepton 搜索
 
 使用不到 500 行的代碼建立您自己的對話搜索引擎。
@@ -41,13 +41,15 @@
 * RELATED_QUESTIONS: 是否生成相關問題。如果您將此設置為 true，搜索引擎將為您生成相關問題。否則，它將不會。
 * GOOGLE_SEARCH_CX: 如果您使用 google，請指定搜索 cx。否則，留空。
 * LEPTON_ENABLE_AUTH_BY_COOKIE: 這是允許網頁 UI 訪問部署的。設置為 true。
+  
 此外，您需要設置以下密鑰：
 
 * LEPTON_WORKSPACE_TOKEN: 調用 Lepton 的 LLM 和 KV apis 需要這個。您可以在設置中找到您的工作區令牌。
 * BING_SEARCH_V7_SUBSCRIPTION_KEY: 如果您使用 Bing，您需要指定訂閱鑰匙。否則不需要。
 * GOOGLE_SEARCH_API_KEY: 如果您使用 Google，您需要指定搜索 api 鑰匙。注意您也應該在 env 中指定 cx。如果您不使用 Google，則不需要。
 * SEARCHAPI_API_KEY: 如果您使用 SearchApi，一個第三方 Google 搜索 API，您需要指定 api 鑰匙。
+  
 一旦這些欄位設置好，點擊頁面底部的部署按鈕來創建部署。您可以看到部署現在已在部署下創建。點擊部署名稱檢查細節。您將能在這頁面上看到部署 URL 和狀態。
 
 一旦狀態變為就緒，點擊部署卡上的 URL 來訪問它。
-](README.md)
+
