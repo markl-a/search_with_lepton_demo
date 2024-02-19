@@ -1,30 +1,31 @@
-import concurrent.futures
-import glob
-import json
-import os
-import re
-import threading
-import requests
-import traceback
-from typing import Annotated, List, Generator, Optional
+import concurrent.futures # 用於創建異步執行的模塊
+import glob # 用於檔案路徑名模式匹配
+import json # 處理JSON數據
+import os # 與操作系統交互，例如讀取環境變量
+import re # 正則表達式，用於文本匹配和替換
+import threading # 提供對線程的支持
+import requests # 發送HTTP請求
+import traceback # 追踪異常
+from typing import Annotated, List, Generator, Optional # 強化代碼類型提示
 
-from fastapi import HTTPException
-from fastapi.responses import HTMLResponse, StreamingResponse, RedirectResponse
-import httpx
-from loguru import logger
+from fastapi import HTTPException # FastAPI異常處理
+from fastapi.responses import HTMLResponse, StreamingResponse, RedirectResponse # FastAPI響應類型
+import httpx # 异步HTTP客户端
+from loguru import logger # 日誌處理
 
-import leptonai
-from leptonai import Client
-from leptonai.kv import KV
-from leptonai.photon import Photon, StaticFiles
-from leptonai.photon.types import to_bool
-from leptonai.api.workspace import WorkspaceInfoLocalRecord
-from leptonai.util import tool
+import leptonai # 導入LeptonAI庫
+from leptonai import Client # LeptonAI客戶端
+from leptonai.kv import KV # LeptonAI的鍵值存儲
+from leptonai.photon import Photon, StaticFiles # LeptonAI的Photon服務和靜態文件處理
+from leptonai.photon.types import to_bool # 輔助函數，轉換字符串到布爾值
+from leptonai.api.workspace import WorkspaceInfoLocalRecord  # 處理工作空間信息
+from leptonai.util import tool # 通用工具
 
 ################################################################################
-# Constant values for the RAG model.
+# Constant values for the RAG model. 接下來的部分定義了一系列常量和默認值，用於設定搜索引擎API的端點和其他配置。
 ################################################################################
 
+# 定義搜索函數，分別使用 Bing、Google、Serper 和 SearchApi.io 進行搜索並返回上下文。
 # Search engine related. You don't really need to change this.
 BING_SEARCH_V7_ENDPOINT = "https://api.bing.microsoft.com/v7.0/search"
 BING_MKT = "en-US"
@@ -32,18 +33,21 @@ GOOGLE_SEARCH_ENDPOINT = "https://customsearch.googleapis.com/customsearch/v1"
 SERPER_SEARCH_ENDPOINT = "https://google.serper.dev/search"
 SEARCHAPI_SEARCH_ENDPOINT = "https://www.searchapi.io/api/v1/search"
 
+# 標定要從搜索引擎參考的內容數量
 # Specify the number of references from the search engine you want to use.
 # 8 is usually a good number.
 REFERENCE_COUNT = 8
 
+# 指定搜索引擎的默認超時時間。如果搜索引擎在此時間內沒有回應，這邊將返回一個代表錯誤的標記。
 # Specify the default timeout for the search engine. If the search engine
 # does not respond within this time, we will return an error.
 DEFAULT_SEARCH_ENGINE_TIMEOUT = 5
 
-
+# 設定的預設字串
 # If the user did not provide a query, we will use this default query.
 _default_query = "Who said 'live long and prosper'?"
 
+# 這真的是RAG模型最重要的部分。它指導模型如何生成答案。當然，不同的模型可能會有不同的行為，我們還沒有調整提示以使其最優化 - 這留給您，應用程序創建者，作為一個開放問題。
 # This is really the most important part of the rag model. It gives instructions
 # to the model on how to generate the answer. Of course, different models may
 # behave differently, and we haven't tuned the prompt to make it optimal - this
