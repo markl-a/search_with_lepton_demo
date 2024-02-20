@@ -174,6 +174,8 @@ def search_with_serper(query: str, subscription_key: str):
     """
     Search with serper and return the contexts.
     """
+    # 定義函數search_with_serper，接受搜索查詢（query）和Serper訂閱鍵（subscription_key）作為參數。
+
     payload = json.dumps({
         "q": query,
         "num": (
@@ -182,23 +184,35 @@ def search_with_serper(query: str, subscription_key: str):
             else (REFERENCE_COUNT // 10 + 1) * 10
         ),
     })
+    # 構造請求負載，包括查詢字串和結果數量。結果數量根據REFERENCE_COUNT計算以符合Serper API的要求。
+
     headers = {"X-API-KEY": subscription_key, "Content-Type": "application/json"}
+    # 設置HTTP請求頭部，包括訂閱鍵和指定內容類型為JSON。
+    
     logger.info(
         f"{payload} {headers} {subscription_key} {query} {SERPER_SEARCH_ENDPOINT}"
     )
+    # 使用logger記錄請求的詳細信息，方便調試。
     response = requests.post(
         SERPER_SEARCH_ENDPOINT,
         headers=headers,
         data=payload,
         timeout=DEFAULT_SEARCH_ENGINE_TIMEOUT,
     )
+    # 使用requests庫發送POST請求到Serper搜索API端點（SERPER_SEARCH_ENDPOINT），包含頭部、負載和超時設定。
+
     if not response.ok:
         logger.error(f"{response.status_code} {response.text}")
         raise HTTPException(response.status_code, "Search engine error.")
-    json_content = response.json()
+    # 檢查HTTP響應是否成功。如果不成功，記錄錯誤並拋出HTTPException。
+    
+    json_content = response.json()# 將響應內容解析為JSON格式。
     try:
         # convert to the same format as bing/google
+        # 轉換成與Bing/Google相同的格式
         contexts = []
+        # 初始化上下文列表。
+        # 處理知識圖谱部分的數據。
         if json_content.get("knowledgeGraph"):
             url = json_content["knowledgeGraph"].get("descriptionUrl") or json_content["knowledgeGraph"].get("website")
             snippet = json_content["knowledgeGraph"].get("description")
@@ -208,6 +222,7 @@ def search_with_serper(query: str, subscription_key: str):
                     "url": url,
                     "snippet": snippet
                 })
+        # 處理答案框部分的數據。
         if json_content.get("answerBox"):
             url = json_content["answerBox"].get("url")
             snippet = json_content["answerBox"].get("snippet") or json_content["answerBox"].get("answer")
@@ -217,14 +232,17 @@ def search_with_serper(query: str, subscription_key: str):
                     "url": url,
                     "snippet": snippet
                 })
+        # 處理有機搜索結果部分的數據。
         contexts += [
             {"name": c["title"], "url": c["link"], "snippet": c.get("snippet","")}
             for c in json_content["organic"]
         ]
+         # 返回根據REFERENCE_COUNT限制的上下文列表。
         return contexts[:REFERENCE_COUNT]
     except KeyError:
         logger.error(f"Error encountered: {json_content}")
         return []
+        # 如果在解析過程中遇到KeyError，記錄錯誤信息並返回一個空列表。
 
 def search_with_searchapi(query: str, subscription_key: str):
     """
