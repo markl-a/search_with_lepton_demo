@@ -138,25 +138,36 @@ def search_with_google(query: str, subscription_key: str, cx: str):
     """
     Search with google and return the contexts.
     """
+    # 定義函數search_with_google，接受搜索查詢（query）、Google API訂閱鍵（subscription_key）和自定義搜索引擎ID（cx）作為參數。
     params = {
         "key": subscription_key,
         "cx": cx,
         "q": query,
         "num": REFERENCE_COUNT,
     }
+    # 設置請求參數，包括API鍵、自定義搜索引擎ID、查詢字串以及要返回的結果數量（REFERENCE_COUNT是先前定義的常量）。
+
     response = requests.get(
         GOOGLE_SEARCH_ENDPOINT, params=params, timeout=DEFAULT_SEARCH_ENGINE_TIMEOUT
     )
+    # 使用requests庫發送GET請求到Google自定義搜索API端點（GOOGLE_SEARCH_ENDPOINT），包含上面定義的請求參數。
+    # 設定超時為DEFAULT_SEARCH_ENGINE_TIMEOUT。
+
     if not response.ok:
         logger.error(f"{response.status_code} {response.text}")
         raise HTTPException(response.status_code, "Search engine error.")
-    json_content = response.json()
+    # 檢查HTTP響應是否成功。如果不成功，記錄錯誤並拋出HTTPException。
+    json_content = response.json()# 將響應內容解析為JSON格式。
     try:
         contexts = json_content["items"][:REFERENCE_COUNT]
+        # 從JSON響應中提取搜索結果，並根據REFERENCE_COUNT限制結果的數量。
     except KeyError:
         logger.error(f"Error encountered: {json_content}")
+        # 如果在解析過程中遇到KeyError，記錄錯誤信息。
         return []
+        # 發生錯誤時返回一個空列表。
     return contexts
+    # 返回提取的上下文列表。
 
 
 def search_with_serper(query: str, subscription_key: str):
