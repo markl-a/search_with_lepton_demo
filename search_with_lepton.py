@@ -65,7 +65,7 @@ Here are the set of contexts:
 
 Remember, don't blindly repeat the contexts verbatim. And here is the user question:
 """
-
+# 要使用的停用詞集合 - 這不是一個完整的集合，根據您的觀察，您可能會想要添加更多。
 # A set of stop words to use - this is not a complete set, and you may want to
 # add more given your observation.
 stop_words = [
@@ -76,7 +76,9 @@ stop_words = [
     "\nSources:\n",
     "End.",
 ]
-
+# 這是一個提示，要求模型生成與原始問題及其上下文相關的問題。
+# 理想情況下，人們希望同時包括原始問題和模型的答案，但我們在這裡不這樣做：如果我們需要等待答案，那麼生成相關問題通常只能在整個答案生成之後才開始。
+# 這會在響應時間上創造明顯的延遲。因此，正如您將在代碼中看到的，我們將向模型發送兩個連續的請求：一個用於獲取答案，另一個用於獲取相關問題。這不是理想的做法，但它是響應時間和質量之間的一個良好妥協。
 # This is the prompt that asks the model to generate related questions to the
 # original question and the contexts.
 # Ideally, one want to include both the original question and the answer from the
@@ -102,24 +104,35 @@ def search_with_bing(query: str, subscription_key: str):
     """
     Search with bing and return the contexts.
     """
+    # 定義函數search_with_bing，接受搜索查詢（query）和Bing訂閱鍵（subscription_key）作為參數。
+
     params = {"q": query, "mkt": BING_MKT}
+    # 設置請求參數，包括查詢字串和市場設定（BING_MKT是一個先前定義的常量，表示查詢的市場）。
+
     response = requests.get(
         BING_SEARCH_V7_ENDPOINT,
         headers={"Ocp-Apim-Subscription-Key": subscription_key},
         params=params,
         timeout=DEFAULT_SEARCH_ENGINE_TIMEOUT,
     )
+    # 使用requests庫發送GET請求到Bing搜索API端點（BING_SEARCH_V7_ENDPOINT），包含訂閱鍵和查詢參數。
+    # 設定超時為DEFAULT_SEARCH_ENGINE_TIMEOUT。
     if not response.ok:
         logger.error(f"{response.status_code} {response.text}")
         raise HTTPException(response.status_code, "Search engine error.")
-    json_content = response.json()
+    # 檢查HTTP響應是否成功。如果不成功，記錄錯誤並拋出HTTPException。
+    
+    json_content = response.json()# 將響應內容解析為JSON格式。
     try:
         contexts = json_content["webPages"]["value"][:REFERENCE_COUNT]
+        # 從JSON響應中提取搜索結果，並根據REFERENCE_COUNT限制結果的數量。
     except KeyError:
         logger.error(f"Error encountered: {json_content}")
+        # 如果在解析過程中遇到KeyError，記錄錯誤信息。
         return []
+        # 發生錯誤時返回一個空列表。
     return contexts
-
+    # 返回提取的上下文列表。
 
 def search_with_google(query: str, subscription_key: str, cx: str):
     """
